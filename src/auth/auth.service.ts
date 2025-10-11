@@ -1,7 +1,6 @@
 import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
 import { User } from 'src/user/entities/user.entity';
 
@@ -24,11 +23,25 @@ export class AuthService {
       });
       await this.userRepository.save(user);
     }
-    const token = this.signJwt({ userId: user.id, email: user.email });
-    return { token, user: { id: user.id, name: user.name, email: user.email } };
+
+    // Generate short-lived access token
+    const token = this.signJwt({ userId: user.id, email: user.email }, '15m');
+
+    // Generate long-lived refresh token
+    const refreshToken = jwt.sign(
+      { userId: user.id, email: user.email },
+      process.env.REFRESH_TOKEN_SECRET || 'refresh_secret',
+      { expiresIn: '7d' }
+    );
+
+    // Optionally save the refresh token in the database
+    user.refreshToken = refreshToken;
+    await this.userRepository.save(user);
+
+    return { token, refreshToken, user: { id: user.id, name: user.name, email: user.email } };
   }
 
-  private signJwt(payload: any) {
-    return jwt.sign(payload, process.env.JWT_SECRET || 'changeme', { expiresIn: '7d' });
+  private signJwt(payload: any, expiresIn: string = '30m'): string {
+    return jwt.sign(payload, process.env.JWT_SECRET || 'changeme', { expiresIn });
   }
 }

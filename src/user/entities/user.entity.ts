@@ -13,6 +13,8 @@ export class User {
 
   @Column()
   password: string;
+  @Column({nullable:true, type:'text'})
+  refreshToken: string;
     
   @Column({nullable:true})
   googleId: string;

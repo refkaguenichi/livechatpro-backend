@@ -12,11 +12,11 @@ export class UserService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  private signJwt(payload: any): string {
+  signJwt(payload: any, expiresIn: string = '30m'): string {
     return jwt.sign(
       payload,
       process.env.JWT_SECRET || 'changeme',
-      { expiresIn: '7d' }
+      { expiresIn }
     );
   }
 async register({ name, email, password }: { name: string; email: string; password: string }) {
@@ -25,18 +25,62 @@ async register({ name, email, password }: { name: string; email: string; passwor
   const hashed = await bcrypt.hash(password, 10);
   const user = this.userRepository.create({ name, email, password: hashed });
   await this.userRepository.save(user);
-  // Issue JWT after registration
+
+  // Issue short-lived access token
   const token = this.signJwt({ userId: user.id, email: user.email });
-  return { token, user: { id: user.id, name: user.name, email: user.email } };
+
+  // Issue long-lived refresh token
+  const refreshToken = jwt.sign(
+    { userId: user.id, email: user.email },
+    process.env.REFRESH_TOKEN_SECRET || 'refresh_secret',
+    { expiresIn: '7d' }
+  );
+
+  // Optionally save the refresh token in the database
+  user.refreshToken = refreshToken;
+  await this.userRepository.save(user);
+
+  return { token, refreshToken, user: { id: user.id, name: user.name, email: user.email } };
 }
 
-  async login(data: { email: string; password: string }) {
-    const user = await this.userRepository.findOne({ where: { email: data.email } });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-    const valid = await bcrypt.compare(data.password, user.password);
-    if (!valid) throw new UnauthorizedException('Invalid credentials');
+async login(data: { email: string; password: string }) {
+  const user = await this.userRepository.findOne({ where: { email: data.email } });
+  if (!user) throw new UnauthorizedException('Invalid credentials');
+  const valid = await bcrypt.compare(data.password, user.password);
+  if (!valid) throw new UnauthorizedException('Invalid credentials');
 
   const token = this.signJwt({ userId: user.id, email: user.email });
-    return { token, user: { id: user.id, name: user.name, email: user.email } };
-  }
+  const refreshToken = jwt.sign(
+    { userId: user.id, email: user.email },
+    process.env.REFRESH_TOKEN_SECRET || 'refresh_secret',
+    { expiresIn: '7d' }
+  );
+
+  // Optionally save the refresh token in the database
+  user.refreshToken = refreshToken;
+  await this.userRepository.save(user);
+
+  return { token, refreshToken, user: { id: user.id, name: user.name, email: user.email } };
+}
+
+  async generateRefreshToken(user: { id: string; email: string }) {
+  const refreshToken = jwt.sign(
+    { userId: user.id, email: user.email },
+    process.env.REFRESH_TOKEN_SECRET || 'refresh_secret',
+    { expiresIn: '7d' }
+  );
+  // Save refresh token in the database or cache
+  await this.userRepository.update(user.id, { refreshToken });
+  return refreshToken;
+}
+
+verifyRefreshToken(token: string) {
+  return jwt.verify(token, process.env.REFRESH_TOKEN_SECRET || 'refresh_secret');
+}
+
+async getUserById(userId: string) {
+  const user = await this.userRepository.findOne({ where: { id: userId } });
+  if (!user) throw new BadRequestException('User not found');
+  return { id: user.id, name: user.name, email: user.email };
+}
 }
