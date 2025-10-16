@@ -5,30 +5,29 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { ChatModule } from './chat/chat.module';
-import { DashboardModule } from './dashboard/dashboard.module';
 import { JwtStrategy } from 'src/auth/jwt.strategy';
 import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { MessageModule } from './message/message.module';
+import { RoomModule } from 'src/room/room.module';
 
 @Module({
   imports: [
       ConfigModule.forRoot(),
       TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: 'localhost',         
-      port: 3306,                
-      username: 'root',          
-      password: '',      
-      database: 'livechatpro',   
+      type: process.env.DB_TYPE as any,
+      host: process.env.DB_HOST,
+      port: parseInt(process.env.DB_PORT || '3306'),
+      username: process.env.DB_USERNAME ,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME ,  
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true,        
     }),
       UserModule,
       AuthModule,
-      ChatModule,
-      DashboardModule,
+      MessageModule,
+      RoomModule,
   ],
   controllers: [AppController],
   providers: [AppService,

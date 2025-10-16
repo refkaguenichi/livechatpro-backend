@@ -1,4 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  OneToMany,
+  ManyToMany,
+} from 'typeorm';
+import { Message } from 'src/message/entities/message.entity';
+import { Room } from 'src/room/entities/room.entity';
 
 @Entity()
 export class User {
@@ -13,12 +24,21 @@ export class User {
 
   @Column()
   password: string;
-  @Column({nullable:true, type:'text'})
+
+  @Column({ nullable: true, type: 'text' })
   refreshToken: string;
-    
-  @Column({nullable:true})
+
+  @Column({ nullable: true })
   googleId: string;
-    
+
+  // ✅ Relation: one user can send many messages
+  @OneToMany(() => Message, (message) => message.sender)
+  sentMessages: Message[];
+
+  // ✅ Rooms this user participates in
+  @ManyToMany(() => Room, (room) => room.participants)
+  rooms: Room[];
+
   @CreateDateColumn()
   createdAt: Date;
 

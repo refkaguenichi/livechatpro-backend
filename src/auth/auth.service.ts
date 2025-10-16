@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as jwt from 'jsonwebtoken';
 import { User } from 'src/user/entities/user.entity';
+import { RoomService } from 'src/room/room.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly roomService: RoomService,
   ) {}
 
   // Register or login with Google profile
@@ -38,6 +40,7 @@ export class AuthService {
     user.refreshToken = refreshToken;
     await this.userRepository.save(user);
 
+    await this.roomService.createDefaultRoomForUser(user.id);
     return { token, refreshToken, user: { id: user.id, name: user.name, email: user.email } };
   }
 
