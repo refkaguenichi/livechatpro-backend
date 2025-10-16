@@ -26,56 +26,50 @@ export class UserController {
       const { token, refreshToken, user } =
         await this.userService.register(body);
 
-      // Set access token in an HTTP-only cookie
-      res.cookie('access_token', token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'lax',
-      });
+        // Set access token in an HTTP-only cookie
+        res.cookie('access_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          sameSite: 'lax',
+        });
 
-      // Set refresh token in an HTTP-only cookie
-      res.cookie('refresh_token', refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/',
-        sameSite: 'lax',
-      });
+        // Set refresh token in an HTTP-only cookie
+        res.cookie('refresh_token', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          path: '/',
+          sameSite: 'lax',
+        });
 
-      return res.send({ message: 'Registration successful', user });
-    } catch (error) {
-      throw new BadRequestException(error.message);
+        return res.send({ message: 'Registration successful', user });
+      } catch (error) {
+        throw new BadRequestException(error.message);
+      }
     }
-  }
-
+    
   @Public()
   @Post('login')
-  async login(
-    @Body() body: { email: string; password: string },
-    @Res() res: Response,
-  ) {
+  async login(@Body() body: { email: string; password: string }, @Res() res: Response) {
     const { token, refreshToken, user } = await this.userService.login(body);
 
     // Set access token in an HTTP-only cookie
     res.cookie('access_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      sameSite: 'lax',
-    });
+          path: '/',
+          sameSite: 'lax',  });
 
     // Set refresh token in an HTTP-only cookie
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      sameSite: 'lax',
-    });
+          path: '/',
+          sameSite: 'lax',  });
 
     return res.send({ message: 'Login successful', user });
   }
 
-  @Public()
   @Post('refresh')
   async refresh(@Req() req, @Res() res: Response) {
     const refreshToken = req.cookies['refresh_token'];
@@ -86,21 +80,17 @@ export class UserController {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const newAccessToken = this.userService.signJwt({
-      userId: payload.userId,
-      email: payload.email,
-    });
+    const newAccessToken = this.userService.signJwt({ userId: payload.userId, email: payload.email });
 
     res.cookie('access_token', newAccessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      sameSite: 'lax',
-    });
+          path: '/',
+          sameSite: 'lax',  });
 
     return res.send({ message: 'Token refreshed' });
   }
-
+  
   @Post('logout')
   async logout(@Res() res: Response) {
     res.clearCookie('access_token');
