@@ -37,6 +37,6 @@ export class AuthController {
       sameSite: 'lax',
     });
 
-    res.redirect(process.env.FRONTEND_ORIGIN || 'http://localhost:3000');
+    res.redirect(process.env.FRONTEND_ORIGIN);
   }
 }

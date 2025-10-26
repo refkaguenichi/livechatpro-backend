@@ -23,7 +23,7 @@ async function bootstrap() {
   // Start server
 const port = process.env.PORT ? parseInt(process.env.PORT) : 1000;
 await app.listen(port, '0.0.0.0'); // <-- listen on all interfaces
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on port:${port}`);
 }
 
 bootstrap();
